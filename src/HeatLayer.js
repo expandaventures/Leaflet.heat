@@ -3,15 +3,24 @@
 L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
 
     // options: {
+    //     url: 'http://tile.sintrafico.com/raw/heatmap.csv'
     //     minOpacity: 0.05,
     //     maxZoom: 18,
     //     radius: 25,
     //     blur: 15,
-    //     max: 1.0
+    //     max: 1.0,
+    //     gradient: {
+    //         0.4: 'blue',
+    //         0.6: 'cyan',
+    //         0.7: 'lime',
+    //         0.8: 'yellow',
+    //         1.0: 'red'
+    //     }
     // },
 
-    initialize: function (latlngs, options) {
+    initialize: function (latlngs, url, options) {
         this._latlngs = latlngs;
+        this.url = url;
         L.setOptions(this, options);
     },
 
