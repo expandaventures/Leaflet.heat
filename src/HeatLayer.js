@@ -3,7 +3,7 @@
 L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
 
     // options: {
-    //     url: 'http://tile.sintrafico.com/raw/heatmap.csv'
+    //     url: 'http://tile.sintrafico.com/raw/heatmap.csv?bbox={minX},{minY},{maxX},{maxY}&apiKey={key}',
     //     minOpacity: 0.05,
     //     maxZoom: 18,
     //     radius: 25,
@@ -18,10 +18,9 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
     //     }
     // },
 
-    initialize: function (latlngs, url, options) {
-        this._latlngs = latlngs;
-        this.url = url;
+    initialize: function (options) {
         L.setOptions(this, options);
+        console.log(this.options);
     },
 
     setLatLngs: function (latlngs) {
@@ -62,7 +61,7 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
             map._panes.overlayPane.appendChild(this._canvas);
         }
 
-        map.on('moveend', this._reset, this);
+        map.on('moveend zoomend', this._reset, this);
 
         if (map.options.zoomAnimation && L.Browser.any3d) {
             map.on('zoomanim', this._animateZoom, this);
@@ -103,7 +102,9 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
         var animated = this._map.options.zoomAnimation && L.Browser.any3d;
         L.DomUtil.addClass(canvas, 'leaflet-zoom-' + (animated ? 'animated' : 'hide'));
 
+
         this._heat = simpleheat(canvas);
+        this._canvas = canvas
         this._updateOptions();
     },
 
@@ -115,6 +116,9 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
         }
         if (this.options.max) {
             this._heat.max(this.options.max);
+        }
+        if (this.options.opacity || 0.8) {
+            this._canvas.style['opacity'] = this.options.opacity;
         }
     },
 
@@ -130,8 +134,22 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
         if (this._heat._height !== size.y) {
             this._canvas.height = this._heat._height = size.y;
         }
+        if (this.options.resolution){
+            var res = this.options.resolution;
+            var z = this._map.getZoom();
 
-        this._redraw();
+        }
+        var that = this;
+        if (this.options.url) {
+            this._latlngs = this._getData(function (data) {
+                that._latlngs = that.options.parseResponse(data);
+                that._redraw();
+            });
+        } else if (this.options.latlngs) {
+            this._latlngs = latlngs;
+            that._redraw();
+        }
+
     },
 
     _redraw: function () {
@@ -202,6 +220,89 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
         // console.timeEnd('draw ' + data.length);
 
         this._frame = null;
+    },
+
+    _getData: function (cb) {
+        this._callData = this._getAjax;
+        if(this.options.jsonpParam)
+        {
+            this.options.url += '&'+this.options.jsonpParam+'=';
+            this._callData = this._getJsonp;
+        }
+
+		this._curReq = null;
+		var bb = this._map.getBounds(),
+			sw = bb.getSouthWest(),
+			ne = bb.getNorthEast(),
+            bbox = L.Util.template(this.options.url, {
+					minX: sw.lng, minY: sw.lat,
+					maxX: ne.lng, maxY: ne.lat
+				});
+
+		if(this._curReq && this._curReq.abort)
+			this._curReq.abort();  //prevent parallel requests
+
+		var that = this;
+		this._curReq = this._callData(bbox, function(data) {
+			that._curReq = null;
+			cb(data);
+		});
+    },
+    
+    _getAjax: function(url, cb) {  //default ajax request
+
+        if (window.XMLHttpRequest === undefined) {
+            window.XMLHttpRequest = function() {
+                try {
+                    return new ActiveXObject("Microsoft.XMLHTTP.6.0");
+                }
+                catch  (e1) {
+                    try {
+                        return new ActiveXObject("Microsoft.XMLHTTP.3.0");
+                    }
+                    catch (e2) {
+                        throw new Error("XMLHttpRequest is not supported");
+                    }
+                }
+            };
+        }
+        var request = new XMLHttpRequest();
+        request.open('GET', url);
+        request.onreadystatechange = function() {
+            var response = {};
+            if (request.readyState === 4 && request.status === 200) {
+                try {
+                    if(window.JSON)
+                        response = JSON.parse(request.responseText);
+                    else
+                        response = eval("("+ request.responseText + ")");
+                } catch(err) {
+                    response = {};                    
+                    throw new Error('Ajax response is not JSON');
+                }
+                cb(response);
+            }
+        };
+        request.send();
+        return request;
+    },
+
+    _getJsonp: function(url, cb) {  //extract searched records from remote jsonp service
+        var body = document.getElementsByTagName('body')[0],
+            script = L.DomUtil.create('script','leaflet-layerjson-jsonp', body );
+
+        //JSONP callback
+        L.LayerJSON.callJsonp = function(data) {
+            cb(data);
+            body.removeChild(script);
+        };
+        script.type = 'text/javascript';
+        script.src = url+'L.LayerJSON.callJsonp';
+        return {
+            abort: function() {
+                script.parentNode.removeChild(script);
+            }
+        };
     },
 
     _animateZoom: function (e) {
