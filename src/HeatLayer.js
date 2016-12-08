@@ -104,7 +104,7 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
 
 
         this._heat = simpleheat(canvas);
-        this._canvas = canvas
+        this._canvas = canvas;
         this._updateOptions();
     },
 
@@ -134,11 +134,12 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
         if (this._heat._height !== size.y) {
             this._canvas.height = this._heat._height = size.y;
         }
-        if (this.options.resolution){
-            var res = this.options.resolution;
-            var z = this._map.getZoom();
 
+        if (this.options.radius_func) {
+            var r = this.options.radius_func(this._map.getZoom());
+            this._heat.radius(r, r / 2);
         }
+
         var that = this;
         if (this.options.url) {
             this._latlngs = this._getData(function (data) {
