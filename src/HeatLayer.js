@@ -123,23 +123,12 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
     },
 
     _reset: function () {
-        var topLeft = this._map.containerPointToLayerPoint([0, 0]);
-        L.DomUtil.setPosition(this._canvas, topLeft);
-
-        var size = this._map.getSize();
-
-        if (this._heat._width !== size.x) {
-            this._canvas.width = this._heat._width  = size.x;
-        }
-        if (this._heat._height !== size.y) {
-            this._canvas.height = this._heat._height = size.y;
-        }
 
         if (this.options.radius_func) {
             var r = this.options.radius_func(this._map.getZoom());
             this._heat.radius(r, r / 2);
         }
-
+        
         var that = this;
         if (this.options.url) {
             this._latlngs = this._getData(function (data) {
@@ -216,6 +205,18 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
         }
         // console.timeEnd('process');
 
+        var topLeft = this._map.containerPointToLayerPoint([0, 0]);
+        L.DomUtil.setPosition(this._canvas, topLeft);
+
+        var size = this._map.getSize();
+        
+        if (this._heat._width !== size.x) {
+            this._canvas.width = this._heat._width  = size.x;
+        }
+        if (this._heat._height !== size.y) {
+            this._canvas.height = this._heat._height = size.y;
+        }
+
         // console.time('draw ' + data.length);
         this._heat.data(data).draw(this.options.minOpacity);
         // console.timeEnd('draw ' + data.length);
@@ -240,7 +241,7 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
 					maxX: ne.lng, maxY: ne.lat
 				});
 
-		if(this._curReq && this._curReq.abort)
+		if(this._curReq)
 			this._curReq.abort();  //prevent parallel requests
 
 		var that = this;
