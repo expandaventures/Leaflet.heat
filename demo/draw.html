@@ -21,11 +21,11 @@
 
 <div id="map"></div>
 
-<!-- <script src="../node_modules/simpleheat/simpleheat.js"></script>
+<script src="../node_modules/simpleheat/simpleheat.js"></script>
 <script src="../src/HeatLayer.js"></script>
- -->
+<!--
 <script src="../dist/leaflet-heat.js"></script>
-
+-->
 <script src="http://leaflet.github.io/Leaflet.markercluster/example/realworld.388.js"></script>
 <script>
 
@@ -37,7 +37,15 @@ var tiles = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
 
 addressPoints = addressPoints.map(function (p) { return [p[0], p[1]]; });
 
-var heat = L.heatLayer(addressPoints).addTo(map),
+var heat = L.heatLayer({
+    latlngs: addressPoints,
+    // blur: 17.5,
+    // radius: 35,
+    radius_func: function (zoom) { // radius as a zoom function
+        return 5.8333*zoom-64.167;
+    },
+    opacity: 0.6
+}).addTo(map),
     draw = true;
 
 map.on({

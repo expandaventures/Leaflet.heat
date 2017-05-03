@@ -136,7 +136,7 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
                 that._redraw();
             });
         } else if (this.options.latlngs) {
-            this._latlngs = latlngs;
+            this._latlngs = this.options.latlngs;
             that._redraw();
         }
 
