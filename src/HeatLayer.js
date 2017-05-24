@@ -122,6 +122,9 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
     },
 
     _reset: function () {
+        if (!this._map) {
+            return;
+        }
 
         if (this.options.radius_func) {
             var r = this.options.radius_func(this._map.getZoom());
