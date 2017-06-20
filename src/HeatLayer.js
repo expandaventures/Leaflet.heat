@@ -16,6 +16,7 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
     //         0.8: 'yellow',
     //         1.0: 'red'
     //     }
+    //     loadingCallback: null, // function(loading), loading is true when starting, false when finished
     // },
 
     initialize: function (options) {
@@ -126,6 +127,10 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
             return;
         }
 
+        var _callback = this.options.loadingCallback;
+        if (_callback)
+            _callback(true);
+
         if (this.options.radius_func) {
             var r = this.options.radius_func(this._map.getZoom());
             this._heat.radius(r, r / 2);
@@ -136,6 +141,8 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
             this._latlngs = this._getData(function (data) {
                 that._latlngs = that.options.parseResponse(data);
                 that._redraw();
+                if (_callback)
+                    _callback(false);
             });
         } else if (this.options.latlngs) {
             this._latlngs = this.options.latlngs;
